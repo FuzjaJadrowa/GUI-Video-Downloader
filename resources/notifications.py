@@ -1,42 +1,72 @@
-from PySide6.QtWidgets import QLabel
-from PySide6.QtCore import Qt, QTimer, QPropertyAnimation, QRect
+from PySide6.QtWidgets import QWidget, QLabel
+from PySide6.QtCore import Qt, QPropertyAnimation, QRect, QTimer
 
-class Notification(QLabel):
-    def __init__(self, parent=None):
+class Popup(QWidget):
+    def __init__(self, parent, text, color_hex):
         super().__init__(parent)
-        self.setAlignment(Qt.AlignCenter)
-        self.setFixedHeight(40)
-        self.setStyleSheet("border-radius: 6px; font-weight: bold;")
-        self.hide()
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.hide_notification)
+        self.setWindowFlags(Qt.Widget | Qt.FramelessWindowHint)
+        self.setAttribute(Qt.WA_TranslucentBackground, True)
+        self.parent = parent
+        self.text = text
+        self.color = color_hex
+        self.width_px = 420
+        self.height_px = 56
+        self.setup_ui()
 
-    def show_message(self, text, type_):
-        colors = {
-            "error": "#ff4c4c",
-            "success": "#28a745",
-            "info": "#1e90ff"
-        }
-        self.setText(text)
-        self.setStyleSheet(f"background-color: {colors[type_]}; color: white; border-radius: 6px; font-weight: bold;")
+    def setup_ui(self):
+        self.label = QLabel(self.text, self)
+        self.label.setStyleSheet(f"""
+            background-color: {self.color};
+            color: white;
+            border-radius: 12px;
+            padding-left: 16px;
+            font-weight: 700;
+        """)
+        self.label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
+        self.setFixedHeight(self.height_px)
+        self.label.setFixedSize(self.width_px, self.height_px)
 
-        self.setGeometry(QRect(0, -40, self.parent().width(), 40))
+    def show_popup(self):
+        parent_rect = self.parent.rect()
+        x = (parent_rect.width() - self.width_px) // 2
+        start = QRect(x, -self.height_px - 10, self.width_px, self.height_px)
+        end = QRect(x, 12, self.width_px, self.height_px)
+        self.setGeometry(start)
+        self.label.setGeometry(0, 0, self.width_px, self.height_px)
         self.show()
 
-        anim = QPropertyAnimation(self, b"geometry")
-        anim.setDuration(300)
-        anim.setStartValue(QRect(0, -40, self.parent().width(), 40))
-        anim.setEndValue(QRect(0, 0, self.parent().width(), 40))
-        anim.start()
-        self.anim = anim
+        self.anim = QPropertyAnimation(self, b"geometry")
+        self.anim.setDuration(380)
+        self.anim.setStartValue(start)
+        self.anim.setEndValue(end)
+        self.anim.start()
 
-        self.timer.start(5000)
+        QTimer.singleShot(5000, self.hide_popup)
 
-    def hide_notification(self):
-        anim = QPropertyAnimation(self, b"geometry")
-        anim.setDuration(300)
-        anim.setStartValue(QRect(0, 0, self.parent().width(), 40))
-        anim.setEndValue(QRect(0, -40, self.parent().width(), 40))
-        anim.start()
-        self.anim = anim
-        self.timer.stop()
+    def hide_popup(self):
+        parent_rect = self.parent.rect()
+        x = (parent_rect.width() - self.width_px) // 2
+        start = QRect(x, 12, self.width_px, self.height_px)
+        end = QRect(x, -self.height_px - 10, self.width_px, self.height_px)
+        self.anim = QPropertyAnimation(self, b"geometry")
+        self.anim.setDuration(300)
+        self.anim.setStartValue(start)
+        self.anim.setEndValue(end)
+        self.anim.start()
+        self.anim.finished.connect(self.deleteLater)
+
+class PopupManager:
+    def __init__(self, parent):
+        self.parent = parent
+
+    def show_error(self, message):
+        p = Popup(self.parent, f"✖ {message}", "#D32F2F")
+        p.show_popup()
+
+    def show_success(self, message):
+        p = Popup(self.parent, f"✔ {message}", "#388E3C")
+        p.show_popup()
+
+    def show_info(self, message):
+        p = Popup(self.parent, f"ℹ {message}", "#1976D2")
+        p.show_popup()

@@ -1,51 +1,61 @@
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QFontDatabase, QIcon
 from launcher import Launcher
+import sys
+from pathlib import Path
 
-app = QApplication([])
+HERE = Path(__file__).parent
 
-QFontDatabase.addApplicationFont("fonts/Montserrat-Bold.ttf")
-QFontDatabase.addApplicationFont("fonts/Montserrat-ExtraBold.ttf")
+app = QApplication(sys.argv)
 
-app.setWindowIcon(QIcon("icon.ico"))
+QFontDatabase.addApplicationFont(str(HERE / "fonts" / "Montserrat-Bold.ttf"))
+QFontDatabase.addApplicationFont(str(HERE / "fonts" / "Montserrat-ExtraBold.ttf"))
+
+app.setWindowIcon(QIcon(str(HERE / "icon.ico")))
 
 app.setStyleSheet("""
-    QLabel, QPushButton {
-        font-family: 'Montserrat';
-        font-weight: bold;
-        color: white;
-    }
-    QLabel.title {
-        font-weight: 800;
-        font-size: 24px;
-    }
-    QLabel.subtitle {
-        font-weight: bold;
-        font-size: 16px;
-    }
-    QPushButton {
-        background-color: #333;
-        border: none;
-        padding: 6px 14px;
-        border-radius: 6px;
-    }
-    QPushButton:hover {
-        background-color: #555;
-    }
-    QProgressBar {
-        border: 1px solid #444;
-        border-radius: 6px;
-        background-color: #222;
-        text-align: center;
-        color: white;
-    }
-    QProgressBar::chunk {
-        background-color: #00bfff;
-        border-radius: 6px;
-    }
+QWidget {
+    background-color: #121212;
+    color: #ffffff;
+    font-family: 'Montserrat';
+}
+QLabel#title {
+    font-weight: 800;
+    font-size: 28px;
+}
+QLabel#subtitle {
+    font-weight: 700;
+    font-size: 14px;
+    color: #bdbdbd;
+}
+QPushButton {
+    background-color: #2b2b2b;
+    color: #ffffff;
+    border: 1px solid #3a3a3a;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-weight: 700;
+}
+QPushButton:hover {
+    background-color: #3a3a3a;
+}
+QPushButton:disabled {
+    background-color: #1b1b1b;
+    color: #777777;
+}
+QProgressBar {
+    background-color: #1f1f1f;
+    color: #ffffff;
+    border: 1px solid #333333;
+    border-radius: 6px;
+    text-align: center;
+}
+QProgressBar::chunk {
+    background-color: #00bfff;
+    border-radius: 6px;
+}
 """)
 
 window = Launcher()
 window.show()
-
-app.exec()
+sys.exit(app.exec())
