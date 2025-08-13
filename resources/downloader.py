@@ -3,54 +3,57 @@ import shutil
 import zipfile
 import tarfile
 import os
-import sqlite3
 import stat
 import threading
+import json
 from pathlib import Path
 
 GITHUB_API = "https://api.github.com"
 
 class DependencyManager:
-    def __init__(self, popup_manager, requirements_dir: Path, db_path: Path):
+    def __init__(self, popup_manager, requirements_dir: Path, json_path: Path):
         self.popup = popup_manager
         self.req_dir = Path(requirements_dir)
-        self.db_path = Path(db_path)
-        self.req_dir.mkdir(parents=True, exist_ok=True)
-        self._ensure_db()
+        self.json_path = Path(json_path)
+        if not self.json_path.exists():
+            self._save_json({})
 
-    def _ensure_db(self):
-        conn = sqlite3.connect(self.db_path)
-        cur = conn.cursor()
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS versions (
-                app_name TEXT PRIMARY KEY,
-                published_at TEXT
-            )
-        """)
-        conn.commit()
-        conn.close()
+    def _load_json(self):
+        try:
+            with open(self.json_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return {}
 
-    def _db_get(self, app_name):
-        conn = sqlite3.connect(self.db_path)
-        cur = conn.cursor()
-        cur.execute("SELECT published_at FROM versions WHERE app_name = ?", (app_name,))
-        row = cur.fetchone()
-        conn.close()
-        return row[0] if row else None
+    def _save_json(self, data):
+        try:
+            with open(self.json_path, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=4)
+        except Exception:
+            pass
 
-    def _db_set(self, app_name, published_at_iso):
-        conn = sqlite3.connect(self.db_path)
-        cur = conn.cursor()
-        cur.execute("INSERT OR REPLACE INTO versions(app_name,published_at) VALUES (?,?)", (app_name, published_at_iso))
-        conn.commit()
-        conn.close()
+    def _json_get(self, app_name):
+        data = self._load_json()
+        return data.get(app_name)
+
+    def _json_set(self, app_name, published_at_iso):
+        data = self._load_json()
+        data[app_name] = published_at_iso
+        self._save_json(data)
 
     def check_existing_requirements(self):
         result = {}
         ff_name = "ffmpeg.exe" if os.name == "nt" else "ffmpeg"
+        ffprobe_name = "ffprobe.exe" if os.name == "nt" else "ffprobe"
+        ffplay_name = "ffplay.exe" if os.name == "nt" else "ffplay"
         ytd_name = "yt-dlp.exe" if os.name == "nt" else "yt-dlp"
-        result["ffmpeg"] = self.req_dir.joinpath(ff_name).exists()
-        result["yt-dlp"] = self.req_dir.joinpath(ytd_name).exists()
+
+        ffmpeg_files = [self.req_dir / ff_name, self.req_dir / ffprobe_name, self.req_dir / ffplay_name]
+        ffmpeg_exists = all(f.exists() for f in ffmpeg_files)
+        ytd_exists = (self.req_dir / ytd_name).exists()
+
+        result["ffmpeg"] = ffmpeg_exists
+        result["yt-dlp"] = ytd_exists
         return result
 
     def _is_online(self):
@@ -76,7 +79,7 @@ class DependencyManager:
                 release = self._github_latest_release("yt-dlp/yt-dlp")
                 asset = self._choose_asset(release.get("assets", []), want_keyword="yt-dlp")
                 if not asset:
-                    raise RuntimeError("yt-dlp asset not found in release")
+                    raise RuntimeError("yt-dlp asset not found")
                 url = asset["browser_download_url"]
                 published_at = release.get("published_at")
                 dest = self.req_dir / ("yt-dlp.exe" if os.name == "nt" else "yt-dlp")
@@ -86,8 +89,8 @@ class DependencyManager:
                 except Exception:
                     pass
                 if published_at:
-                    self._db_set("yt-dlp", published_at)
-                self.popup.show_success(f"Downloaded yt-dlp")
+                    self._json_set("yt-dlp", published_at)
+                self.popup.show_success("Downloaded yt-dlp")
                 if finish_callback:
                     finish_callback(name, True, "downloaded")
                 return
@@ -101,16 +104,16 @@ class DependencyManager:
                 if not asset:
                     raise RuntimeError("ffmpeg asset not found")
                 url = asset["browser_download_url"]
-                published_at = chosen.get("published_at") or chosen.get("tag_name")
                 tmp_zip = self.req_dir / "ffmpeg_download.zip"
                 self._download_file(url, tmp_zip, progress_bar)
-                extracted = self._extract_and_copy_ffmpeg(tmp_zip)
+                self._extract_and_copy_ffmpeg(tmp_zip)
                 try:
                     tmp_zip.unlink()
                 except Exception:
                     pass
+                published_at = chosen.get("published_at") or chosen.get("tag_name")
                 if published_at:
-                    self._db_set("ffmpeg", published_at)
+                    self._json_set("ffmpeg", published_at)
                 self.popup.show_success("Downloaded ffmpeg")
                 if finish_callback:
                     finish_callback(name, True, "downloaded")
@@ -136,7 +139,7 @@ class DependencyManager:
             if name == "yt-dlp":
                 release = self._github_latest_release("yt-dlp/yt-dlp")
                 published_at = release.get("published_at")
-                stored = self._db_get("yt-dlp")
+                stored = self._json_get("yt-dlp")
                 if stored and published_at and stored == published_at:
                     self.popup.show_info("No updates found")
                     if finish_callback:
@@ -153,7 +156,7 @@ class DependencyManager:
                     except Exception:
                         pass
                     if published_at:
-                        self._db_set("yt-dlp", published_at)
+                        self._json_set("yt-dlp", published_at)
                     self.popup.show_success("Updated yt-dlp")
                     if finish_callback:
                         finish_callback(name, True, "updated")
@@ -165,7 +168,7 @@ class DependencyManager:
                 if not chosen:
                     raise RuntimeError("No ffmpeg builds found")
                 published_at = chosen.get("published_at")
-                stored = self._db_get("ffmpeg")
+                stored = self._json_get("ffmpeg")
                 if stored and published_at and stored == published_at:
                     self.popup.show_info("No updates found")
                     if finish_callback:
@@ -177,13 +180,13 @@ class DependencyManager:
                     url = asset["browser_download_url"]
                     tmp_zip = self.req_dir / "ffmpeg_download.zip"
                     self._download_file(url, tmp_zip, progress_bar)
-                    extracted = self._extract_and_copy_ffmpeg(tmp_zip)
+                    self._extract_and_copy_ffmpeg(tmp_zip)
                     try:
                         tmp_zip.unlink()
                     except Exception:
                         pass
                     if published_at:
-                        self._db_set("ffmpeg", published_at)
+                        self._json_set("ffmpeg", published_at)
                     self.popup.show_success("Updated ffmpeg")
                     if finish_callback:
                         finish_callback(name, True, "updated")
@@ -265,14 +268,14 @@ class DependencyManager:
                         t.extractall(temp_dir)
                 except Exception:
                     raise
-            candidates = []
             ff_name = "ffmpeg.exe" if os.name == "nt" else "ffmpeg"
             ffprobe_name = "ffprobe.exe" if os.name == "nt" else "ffprobe"
             ffplay_name = "ffplay.exe" if os.name == "nt" else "ffplay"
+            candidates = []
             for p in temp_dir.rglob("*"):
                 if p.is_file():
                     n = p.name.lower()
-                    if n == ff_name.lower() or n == ffprobe_name.lower() or n == ffplay_name.lower():
+                    if n in {ff_name.lower(), ffprobe_name.lower(), ffplay_name.lower()}:
                         candidates.append(p)
             for src in candidates:
                 dest = self.req_dir / src.name

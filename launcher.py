@@ -21,7 +21,7 @@ class Launcher(QWidget):
         self.setStyleSheet("background-color: #121212;")
 
         self.popup = PopupManager(self)
-        self.deps = DependencyManager(self.popup, requirements_dir=REQUIREMENTS_DIR, db_path=DATA_DIR / "db.sqlite")
+        self.deps = DependencyManager(self.popup, requirements_dir=REQUIREMENTS_DIR, json_path=DATA_DIR / "version_info.json")
 
         top_row = QHBoxLayout()
         icon_label = QLabel()
