@@ -1,0 +1,5 @@
+data/
+.idea/
+__pycache__/
+LICENSE
+resources/__pycache__/
