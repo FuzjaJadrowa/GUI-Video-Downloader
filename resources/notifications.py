@@ -1,5 +1,6 @@
 from PySide6.QtWidgets import QWidget, QLabel
-from PySide6.QtCore import Qt, QPropertyAnimation, QRect, QTimer
+from PySide6.QtCore import Qt, QPropertyAnimation, QRect, QTimer, QObject, Signal
+
 
 class Popup(QWidget):
     def __init__(self, parent, text, color_hex):
@@ -55,18 +56,24 @@ class Popup(QWidget):
         self.anim.start()
         self.anim.finished.connect(self.deleteLater)
 
-class PopupManager:
+
+class PopupManager(QObject):
+    _request_popup = Signal(str, str)  # message, color
+
     def __init__(self, parent):
+        super().__init__(parent)
         self.parent = parent
+        self._request_popup.connect(self._show_popup_main_thread)
+
+    def _show_popup_main_thread(self, message, color):
+        p = Popup(self.parent, message, color)
+        p.show_popup()
 
     def show_error(self, message):
-        p = Popup(self.parent, f"✖ {message}", "#D32F2F")
-        p.show_popup()
+        self._request_popup.emit(f"✖ {message}", "#D32F2F")
 
     def show_success(self, message):
-        p = Popup(self.parent, f"✔ {message}", "#388E3C")
-        p.show_popup()
+        self._request_popup.emit(f"✔ {message}", "#388E3C")
 
     def show_info(self, message):
-        p = Popup(self.parent, f"ℹ {message}", "#1976D2")
-        p.show_popup()
+        self._request_popup.emit(f"ℹ {message}", "#1976D2")
