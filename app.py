@@ -41,10 +41,7 @@ class VideoDownloaderGUI(QWidget):
 
         self.cookies_label = QLabel("Cookies from browser:")
         self.cookies_combo = QComboBox()
-        self.cookies_combo.addItems([
-            "None", "Brave", "Chrome", "Chromium", "Edge",
-            "Firefox", "Opera", "Safari", "Vivaldi", "Whale"
-        ])
+        self.cookies_combo.addItems(["None", "Brave", "Chrome", "Chromium", "Edge", "Firefox", "Opera", "Safari", "Vivaldi", "Whale"])
         layout.addWidget(self.cookies_label)
         layout.addWidget(self.cookies_combo)
 

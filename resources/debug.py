@@ -9,14 +9,12 @@ def run_debug_command(cmd_list):
     env["PATH"] = str(FFMPEG_PATH) + ";" + env.get("PATH", "")
 
     print("DEBUG: Running command:")
-    print(" ".join(f'"{c}"' if " " in c else c for c in cmd_list))  # pełna komenda w logu
+    print(" ".join(f'"{c}"' if " " in c else c for c in cmd_list))
 
     try:
-        process = subprocess.Popen(
-            cmd_list, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=env
-        )
+        process = subprocess.Popen(cmd_list, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=env)
         for line in process.stdout:
-            print(line, end="")  # log w czasie rzeczywistym
+            print(line, end="")
         process.wait()
         if process.returncode == 0:
             print("\nDEBUG: Command finished successfully.")
