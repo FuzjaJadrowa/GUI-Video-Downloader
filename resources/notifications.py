@@ -42,7 +42,7 @@ class Popup(QWidget):
         self.anim.setEndValue(end)
         self.anim.start()
 
-        QTimer.singleShot(5000, self.hide_popup)
+        QTimer.singleShot(2000, self.hide_popup)
 
     def hide_popup(self):
         parent_rect = self.parent.rect()

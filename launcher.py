@@ -1,11 +1,11 @@
-import subprocess
 from pathlib import Path
-
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QProgressBar
 from PySide6.QtCore import Qt
+
+from app import VideoDownloaderGUI
 from resources.notifications import PopupManager
-from resources.downloader import DependencyManager
+from resources.reqdownloader import DependencyManager
 
 HERE = Path(__file__).parent
 DATA_DIR = HERE / "data"
@@ -115,7 +115,8 @@ class Launcher(QWidget):
 
     def on_launch(self):
         try:
-            subprocess.Popen([sys.executable, str(HERE / "app.py")])
+            self.window = VideoDownloaderGUI()
+            self.window.show()
             self.close()
         except Exception as e:
             self.popup.show_error(f"Error: Cannot launch app. {e}")

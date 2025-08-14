@@ -1,7 +1,7 @@
+import sys
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QFontDatabase, QIcon
 from launcher import Launcher
-import sys
 from pathlib import Path
 
 HERE = Path(__file__).parent
@@ -53,6 +53,15 @@ QProgressBar {
 QProgressBar::chunk {
     background-color: #00bfff;
     border-radius: 6px;
+}
+QComboBox:disabled, QCheckBox:disabled, QLineEdit:disabled {
+    background-color: #2b2b2b;
+    color: #777777;
+}
+QPushButton:disabled {
+    background-color: #1b1b1b;
+    color: #777777;
+    border: 1px solid #2a2a2a;
 }
 """)
 
