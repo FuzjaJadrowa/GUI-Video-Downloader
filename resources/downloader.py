@@ -84,34 +84,42 @@ class Downloader:
 
         def run():
             try:
+                si = subprocess.STARTUPINFO()
+                si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                si.wShowWindow = subprocess.SW_HIDE
+
                 self.process = subprocess.Popen(
-                    cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=env
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    env=env,
+                    startupinfo=si
                 )
 
-                # czytanie stdout w tle
                 while True:
                     line = self.process.stdout.readline()
                     if not line:
                         break
-                    # parsowanie postępu
                     if self.progress_callback and "[" in line and "%" in line:
-                        percent = line.strip().strip("[]").replace("%", "")
+                        percent = line.strip().split("%")[0].split()[-1]
                         try:
                             self.progress_callback(float(percent))
                         except:
                             pass
-                    # debug
                     print(line, end="")
 
                 self.process.wait()
                 if self.process.returncode == 0:
                     self.popup.show_info("Download completed successfully!")
                 else:
-                    self.popup.show_error("Download failed or was stopped.")
+                    self.popup.show_error("Error during download. Check debug for details.")
             except Exception as e:
-                self.popup.show_error(f"Error during download: {e}")
+                self.popup.show_error(f"Download failed: {e}")
             finally:
                 self.process = None
+                if self.progress_callback:
+                    self.progress_callback(0)
                 if on_finished:
                     on_finished()
 
