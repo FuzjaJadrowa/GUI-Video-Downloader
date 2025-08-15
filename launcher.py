@@ -21,7 +21,18 @@ class Launcher(QWidget):
         self.setStyleSheet("background-color: #121212;")
 
         self.popup = PopupManager(self)
-        self.deps = DependencyManager(self.popup, requirements_dir=REQUIREMENTS_DIR, json_path=DATA_DIR / "version_info.json")
+        self.deps = DependencyManager(
+            self.popup,
+            requirements_dir=REQUIREMENTS_DIR,
+            json_path=DATA_DIR / "version_info.json"
+        )
+
+        self.downloading = False
+
+        self.deps.signals.progress.connect(self.on_progress)
+        self.deps.signals.finished.connect(self.on_op_finished_wrapper)
+        self.deps.signals.info.connect(self.show_info_popup_wrapper)
+        self.deps.signals.error.connect(self.show_error_popup_wrapper)
 
         top_row = QHBoxLayout()
         icon_label = QLabel()
@@ -78,8 +89,23 @@ class Launcher(QWidget):
         layout.addSpacing(10)
 
         self.setLayout(layout)
-
         self.update_buttons_state()
+
+    def show_info_popup_wrapper(self, message):
+        self.popup.show_info(message)
+
+    def show_error_popup_wrapper(self, message):
+        self.popup.show_error(message)
+
+    def on_op_finished_wrapper(self, name, success, message):
+        self.downloading = False
+        self.ff_button.setEnabled(True)
+        self.yt_button.setEnabled(True)
+        self.update_buttons_state()
+        if success:
+            self.popup.show_success(f"{name} {message}")
+        else:
+            self.popup.show_error(f"{name} {message}")
 
     def update_buttons_state(self):
         states = self.deps.check_existing_requirements()
@@ -97,21 +123,27 @@ class Launcher(QWidget):
             self.yt_progress.setValue(0)
 
     def on_dep_clicked(self, name):
+        if self.downloading:
+            self.popup.show_info("Please wait until the current download finishes.")
+            return
+
+        self.downloading = True
+        self.ff_button.setEnabled(False)
+        self.yt_button.setEnabled(False)
+
         btn = self.ff_button if name == "ffmpeg" else self.yt_button
         progress = self.ff_progress if name == "ffmpeg" else self.yt_progress
-        if btn.text().lower() == "install":
-            btn.setEnabled(False)
-            self.deps.install_dependency(name, progress, btn, finish_callback=self.on_op_finished)
-        else:
-            btn.setEnabled(False)
-            self.deps.check_update_dependency(name, progress, btn, finish_callback=self.on_op_finished)
 
-    def on_op_finished(self, name, success, message):
-        if name == "ffmpeg":
-            self.ff_button.setEnabled(True)
+        if btn.text().lower() == "install":
+            self.deps.install_dependency(name, progress, btn)
         else:
-            self.yt_button.setEnabled(True)
-        self.update_buttons_state()
+            self.deps.check_update_dependency(name, progress, btn)
+
+    def on_progress(self, name, pct):
+        if name == "ffmpeg":
+            self.ff_progress.setValue(pct)
+        elif name == "yt-dlp":
+            self.yt_progress.setValue(pct)
 
     def on_launch(self):
         try:

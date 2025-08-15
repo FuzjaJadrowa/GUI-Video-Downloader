@@ -80,7 +80,6 @@ class Downloader:
                 cmd += ["-S", f"res:{res_value}"]
 
         cmd.append(url)
-        run_debug_command(cmd)
 
         def run():
             try:
@@ -111,7 +110,7 @@ class Downloader:
 
                 self.process.wait()
                 if self.process.returncode == 0:
-                    self.popup.show_info("Download completed successfully!")
+                    self.popup.show_success("Download completed successfully!")
                 else:
                     self.popup.show_error("Error during download. Check debug for details.")
             except Exception as e:
