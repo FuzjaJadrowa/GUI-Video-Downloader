@@ -1,20 +1,23 @@
 import sys
+
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QFontDatabase, QIcon
 from launcher import Launcher
 from pathlib import Path
 
-if getattr(sys, 'frozen', False):
-    HERE = Path(sys._MEIPASS)
-else:
-    HERE = Path(__file__).parent
+def resource_path(relative_path):
+    if getattr(sys, 'frozen', False):
+        return Path(sys._MEIPASS) / relative_path
+    return Path(__file__).parent / relative_path
+
+HERE = Path(__file__).parent
 
 app = QApplication(sys.argv)
 
-QFontDatabase.addApplicationFont(str(HERE / "fonts" / "Montserrat-Bold.ttf"))
-QFontDatabase.addApplicationFont(str(HERE / "fonts" / "Montserrat-ExtraBold.ttf"))
+QFontDatabase.addApplicationFont(str(resource_path("fonts/Montserrat-Bold.ttf")))
+QFontDatabase.addApplicationFont(str(resource_path("fonts/Montserrat-ExtraBold.ttf")))
 
-app.setWindowIcon(QIcon(str(HERE / "icon.ico")))
+app.setWindowIcon(QIcon(str(resource_path("icon.ico"))))
 
 app.setStyleSheet("""
 QWidget {
@@ -77,6 +80,6 @@ QScrollBar::handle:vertical {
 }
 """)
 
-window = Launcher()
+window = Launcher(resource_path)
 window.show()
 sys.exit(app.exec())

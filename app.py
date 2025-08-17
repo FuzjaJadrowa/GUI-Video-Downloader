@@ -1,26 +1,23 @@
 from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QLineEdit, QVBoxLayout, QHBoxLayout, QProgressBar, QComboBox, QCheckBox, QFileDialog, QTextEdit, QStackedWidget
 from PySide6.QtGui import QIcon, Qt, QPixmap
 from PySide6.QtCore import QTimer
-from pathlib import Path
-import sys
 
 from resources.downloader import Downloader
 from resources.notifications import PopupManager
 
-def resource_path(relative_path):
-    if hasattr(sys, "_MEIPASS"):
-        return Path(sys._MEIPASS) / relative_path
-    return Path(relative_path)
-
 class VideoDownloaderGUI(QWidget):
-    def __init__(self):
+    def __init__(self, resource_path_func):
         super().__init__()
+        self.resource_path = resource_path_func
+
         self.setWindowTitle("GUI Video Downloader")
         self.setFixedSize(550, 600)
-        self.setWindowIcon(QIcon("icon.ico"))
+        self.setWindowIcon(QIcon(str(self.resource_path("icon.ico"))))
         self.init_ui()
 
     def init_ui(self):
+        icon_label = QLabel()
+        icon_label.setPixmap(QPixmap(str(self.resource_path("icon.ico"))).scaled(32, 32, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         main_layout = QVBoxLayout()
 
         title_layout = QHBoxLayout()

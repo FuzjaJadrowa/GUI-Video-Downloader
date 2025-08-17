@@ -1,6 +1,7 @@
+import sys
 from pathlib import Path
 from PySide6.QtGui import QPixmap
-from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QProgressBar
+from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QProgressBar, QApplication
 from PySide6.QtCore import Qt
 
 from app import VideoDownloaderGUI
@@ -14,11 +15,19 @@ DATA_DIR.mkdir(exist_ok=True)
 REQUIREMENTS_DIR.mkdir(parents=True, exist_ok=True)
 
 class Launcher(QWidget):
-    def __init__(self):
+    def __init__(self, resource_path_func):
         super().__init__()
+        self.resource_path = resource_path_func
+
         self.setWindowTitle("GUI Video Downloader Launcher")
         self.setFixedSize(680, 300)
         self.setStyleSheet("background-color: #121212;")
+
+        top_row = QHBoxLayout()
+        icon_label = QLabel()
+        icon_path = self.resource_path("icon.ico")
+        if icon_path.exists():
+            icon_label.setPixmap(QPixmap(str(icon_path)).scaled(48, 48, Qt.KeepAspectRatio, Qt.SmoothTransformation))
 
         self.popup = PopupManager(self)
         self.deps = DependencyManager(
@@ -42,7 +51,7 @@ class Launcher(QWidget):
 
         title_label = QLabel("GUI Video Downloader Launcher")
         title_label.setObjectName("title")
-        subtitle_label = QLabel("Version 1.1.0")
+        subtitle_label = QLabel("Version x.x.x")
         subtitle_label.setObjectName("subtitle")
 
         title_col = QVBoxLayout()
@@ -145,15 +154,13 @@ class Launcher(QWidget):
 
     def on_launch(self):
         try:
-            self.window = VideoDownloaderGUI()
+            self.window = VideoDownloaderGUI(self.resource_path)
             self.window.show()
             self.close()
         except Exception as e:
-            self.popup.show_error(f"Error: Cannot launch app. {e}")
+            self.popup.show_error(f"Error: Cannot launch app.")
 
 if __name__ == "__main__":
-    import sys
-    from PySide6.QtWidgets import QApplication
     app = QApplication(sys.argv)
     w = Launcher()
     w.show()
