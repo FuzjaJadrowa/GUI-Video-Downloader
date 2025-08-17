@@ -24,7 +24,7 @@ class VideoDownloaderGUI(QWidget):
         title_layout.setAlignment(Qt.AlignCenter)
 
         icon_label = QLabel()
-        icon_label.setPixmap(QIcon("icon.ico").pixmap(32, 32))
+        icon_label.setPixmap(QPixmap(str(self.resource_path("icon.ico"))).scaled(32, 32, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         title_layout.addWidget(icon_label)
 
         self.title_label = QLabel("GUI Video Downloader")
