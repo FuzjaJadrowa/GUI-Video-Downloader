@@ -4,7 +4,10 @@ from PySide6.QtGui import QFontDatabase, QIcon
 from launcher import Launcher
 from pathlib import Path
 
-HERE = Path(__file__).parent
+if getattr(sys, 'frozen', False):
+    HERE = Path(sys._MEIPASS)
+else:
+    HERE = Path(__file__).parent
 
 app = QApplication(sys.argv)
 
@@ -37,11 +40,13 @@ QPushButton {
     font-weight: 700;
 }
 QPushButton:hover {
-    background-color: #3a3a3a;
+    background-color: #3a3f4a;
+    border: 1px solid #00bfff;
 }
 QPushButton:disabled {
     background-color: #1b1b1b;
     color: #777777;
+    border: 1px solid #2a2a2a;
 }
 QProgressBar {
     background-color: #1f1f1f;
@@ -58,10 +63,17 @@ QComboBox:disabled, QCheckBox:disabled, QLineEdit:disabled {
     background-color: #2b2b2b;
     color: #777777;
 }
-QPushButton:disabled {
-    background-color: #1b1b1b;
-    color: #777777;
-    border: 1px solid #2a2a2a;
+QTextEdit {
+    background-color: #121212;
+    color: #ffffff;
+}
+QScrollBar:vertical {
+    background: #121212;
+    width: 12px;
+}
+QScrollBar::handle:vertical {
+    background: green;
+    min-height: 20px;
 }
 """)
 

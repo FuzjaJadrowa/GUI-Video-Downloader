@@ -38,16 +38,19 @@ class Launcher(QWidget):
         icon_label = QLabel()
         icon_path = HERE / "icon.ico"
         if icon_path.exists():
-            icon_label.setPixmap(QPixmap(str(icon_path)).scaled(48, 48))
+            icon_label.setPixmap(QPixmap(str(icon_path)).scaled(48, 48, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+
         title_label = QLabel("GUI Video Downloader Launcher")
         title_label.setObjectName("title")
-        subtitle_label = QLabel("Version 1.0.1")
+        subtitle_label = QLabel("Version 1.1.0")
         subtitle_label.setObjectName("subtitle")
 
         title_col = QVBoxLayout()
-        title_col.addWidget(title_label, alignment=Qt.AlignCenter)
-        title_col.addWidget(subtitle_label, alignment=Qt.AlignCenter)
-        top_row.addStretch()
+        title_col.addWidget(title_label, alignment=Qt.AlignLeft)
+        title_col.addWidget(subtitle_label, alignment=Qt.AlignLeft)
+
+        top_row.addWidget(icon_label, alignment=Qt.AlignLeft)
+        top_row.addSpacing(8)
         top_row.addLayout(title_col)
         top_row.addStretch()
 
@@ -75,9 +78,9 @@ class Launcher(QWidget):
         yt_row.addWidget(self.yt_progress, stretch=1)
         yt_row.addWidget(self.yt_button)
 
-        launch_btn = QPushButton("Launch")
-        launch_btn.setFixedWidth(140)
-        launch_btn.clicked.connect(self.on_launch)
+        self.launch_btn = QPushButton("Launch")
+        self.launch_btn.setFixedWidth(140)
+        self.launch_btn.clicked.connect(self.on_launch)
 
         layout = QVBoxLayout()
         layout.addLayout(top_row)
@@ -85,7 +88,7 @@ class Launcher(QWidget):
         layout.addLayout(ff_row)
         layout.addLayout(yt_row)
         layout.addStretch()
-        layout.addWidget(launch_btn, alignment=Qt.AlignCenter)
+        layout.addWidget(self.launch_btn, alignment=Qt.AlignCenter)
         layout.addSpacing(10)
 
         self.setLayout(layout)
@@ -99,8 +102,6 @@ class Launcher(QWidget):
 
     def on_op_finished_wrapper(self, name, success, message):
         self.downloading = False
-        self.ff_button.setEnabled(True)
-        self.yt_button.setEnabled(True)
         self.update_buttons_state()
         if success:
             self.popup.show_success(f"{name} {message}")
@@ -122,15 +123,12 @@ class Launcher(QWidget):
             self.yt_button.setText("Install")
             self.yt_progress.setValue(0)
 
+        if states.get("ffmpeg") and states.get("yt-dlp"):
+            self.launch_btn.setEnabled(True)
+        else:
+            self.launch_btn.setEnabled(False)
+
     def on_dep_clicked(self, name):
-        if self.downloading:
-            self.popup.show_info("Please wait until the current download finishes.")
-            return
-
-        self.downloading = True
-        self.ff_button.setEnabled(False)
-        self.yt_button.setEnabled(False)
-
         btn = self.ff_button if name == "ffmpeg" else self.yt_button
         progress = self.ff_progress if name == "ffmpeg" else self.yt_progress
 

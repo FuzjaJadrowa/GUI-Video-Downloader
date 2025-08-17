@@ -80,6 +80,7 @@ class DependencyManager:
 
     def _install_thread(self, name, progress_bar, button, finish_callback):
         try:
+            button.setEnabled(False)
             if not self._is_online():
                 self.signals.error.emit("Error: No internet connection.")
                 if finish_callback:
@@ -124,12 +125,15 @@ class DependencyManager:
                 return
 
         except Exception as e:
-            self.signals.error.emit(f"Error: {e}")
+            self.signals.error.emit("Error while downloading")
             if finish_callback:
                 finish_callback(name, False, str(e))
+        finally:
+            button.setEnabled(True)
 
     def _check_update_thread(self, name, progress_bar, button, finish_callback):
         try:
+            button.setEnabled(False)
             if not self._is_online():
                 self.signals.error.emit("Error: No internet connection.")
                 if finish_callback:
@@ -186,9 +190,11 @@ class DependencyManager:
                 return
 
         except Exception as e:
-            self.signals.error.emit(f"Error: {e}")
+            self.signals.error.emit("Error while updating")
             if finish_callback:
                 finish_callback(name, False, str(e))
+        finally:
+            button.setEnabled(True)
 
     def _github_latest_release(self, owner_repo):
         url = f"{GITHUB_API}/repos/{owner_repo}/releases/latest"

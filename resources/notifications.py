@@ -3,6 +3,8 @@ from PySide6.QtCore import Qt, QPropertyAnimation, QRect, QTimer, QObject, Signa
 
 
 class Popup(QWidget):
+    closed = Signal()
+
     def __init__(self, parent, text, color_hex):
         super().__init__(parent)
         self.setWindowFlags(Qt.Widget | Qt.FramelessWindowHint)
@@ -54,7 +56,11 @@ class Popup(QWidget):
         self.anim.setStartValue(start)
         self.anim.setEndValue(end)
         self.anim.start()
-        self.anim.finished.connect(self.deleteLater)
+        self.anim.finished.connect(self._on_closed)
+
+    def _on_closed(self):
+        self.closed.emit()
+        self.deleteLater()
 
 
 class PopupManager(QObject):
@@ -63,11 +69,19 @@ class PopupManager(QObject):
     def __init__(self, parent):
         super().__init__(parent)
         self.parent = parent
+        self.active_popup = None
         self._request_popup.connect(self._show_popup_main_thread)
 
     def _show_popup_main_thread(self, message, color):
+        if self.active_popup is not None:
+            return
         p = Popup(self.parent, message, color)
+        self.active_popup = p
+        p.closed.connect(self._on_popup_closed)
         p.show_popup()
+
+    def _on_popup_closed(self):
+        self.active_popup = None
 
     def show_error(self, message):
         self._request_popup.emit(f"✖ {message}", "#D32F2F")
