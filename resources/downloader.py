@@ -67,18 +67,29 @@ class Downloader:
             cmd += ["--cookies-from-browser", cookies.lower()]
         if frag_from and frag_to:
             cmd += ["--download-sections", f"*{frag_from}-{frag_to}"]
-        if audio_only:
-            cmd.append("-x")
+
+        is_live = "live" in url.lower()
+
+        if is_live:
             if audio_format.lower() != "default":
-                cmd += ["--audio-format", audio_format.lower()]
-            if audio_quality.lower() != "default":
-                cmd += ["--audio-quality", audio_quality.replace("kbps", "K")]
+                cmd += ["--merge-output-format", audio_format.lower()]
+            elif video_format.lower() != "default":
+                cmd += ["--merge-output-format", video_format.lower()]
+            cmd += ["--progress-template", "%(progress._percent_str)s"]
         else:
-            if video_format.lower() != "default":
-                cmd += ["-f", video_format.lower()]
-            if video_quality.lower() != "default":
-                res_value = video_quality.replace("p", "")
-                cmd += ["-S", f"res:{res_value}"]
+            if audio_only:
+                cmd.append("-x")
+                if audio_format.lower() != "default":
+                    cmd += ["--audio-format", audio_format.lower()]
+                if audio_quality.lower() != "default":
+                    cmd += ["--audio-quality", audio_quality.replace("kbps", "K")]
+            else:
+                if video_format.lower() != "default":
+                    cmd += ["-f", video_format.lower()]
+                if video_quality.lower() != "default":
+                    res_value = video_quality.replace("p", "")
+                    cmd += ["-S", f"res:{res_value}"]
+
         if custom_arg:
             cmd += [custom_arg]
         cmd.append(url)
