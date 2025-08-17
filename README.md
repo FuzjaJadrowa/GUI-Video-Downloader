@@ -10,10 +10,8 @@ Introducing a new Python application that adds the ability to download videos an
 - Visible command preview.
 - Modern GUI.
 ## Images
-<img width="676" height="297" alt="launcher" src="https://github.com/user-attachments/assets/308bbfa8-6f51-4477-8294-cbe122967be4" />
-
-<img width="496" height="497" alt="app" src="https://github.com/user-attachments/assets/2670ec07-5de1-4a90-8e67-b6af777e25db" />
-
+<img width="677" height="297" alt="launcher" src="https://github.com/user-attachments/assets/9fafbe60-c33e-41f1-8f5f-196fca039d9f" />
+<img width="548" height="595" alt="app" src="https://github.com/user-attachments/assets/1c1c8a68-15d6-4932-9d91-cd5b8529b856" />
 ## Donate
 Support my projects at **Buy Me A Coffee**!
 https://buymeacoffee.com/fuzjajadrowa
