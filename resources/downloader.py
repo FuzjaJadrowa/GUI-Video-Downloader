@@ -1,18 +1,36 @@
 import subprocess
 import threading
+import re
 from pathlib import Path
 import validators
 import requests
+from PySide6.QtCore import QObject, Signal
 
 YT_DLP_PATH = Path(__file__).parent.parent / "data" / "requirements" / "yt-dlp.exe"
 FFMPEG_PATH = Path(__file__).parent.parent / "data" / "requirements"
 
-class Downloader:
+class Downloader(QObject):
+    output_signal = Signal(str)
+    progress_signal = Signal(float)
+    finished_signal = Signal(bool, str)
+
     def __init__(self, popup_manager, progress_callback=None, output_callback=None):
+        super().__init__()
         self.popup = popup_manager
         self.process = None
         self.progress_callback = progress_callback
         self.output_callback = output_callback
+        if self.output_callback:
+            self.output_signal.connect(lambda s: self.output_callback(s))
+        if self.progress_callback:
+            self.progress_signal.connect(lambda v: self.progress_callback(v))
+        self.finished_signal.connect(self._on_finished_signal)
+
+    def _on_finished_signal(self, ok, msg):
+        if ok:
+            self.popup.show_success(msg)
+        else:
+            self.popup.show_error(msg)
 
     def check_internet(self):
         try:
@@ -71,10 +89,6 @@ class Downloader:
         is_live = "live" in url.lower()
 
         if is_live:
-            if audio_format.lower() != "default":
-                cmd += ["--merge-output-format", audio_format.lower()]
-            elif video_format.lower() != "default":
-                cmd += ["--merge-output-format", video_format.lower()]
             cmd += ["--progress-template", "%(progress._percent_str)s"]
         else:
             if audio_only:
@@ -84,11 +98,12 @@ class Downloader:
                 if audio_quality.lower() != "default":
                     cmd += ["--audio-quality", audio_quality.replace("kbps", "K")]
             else:
-                if video_format.lower() != "default":
-                    cmd += ["-f", video_format.lower()]
+                cmd += ["-f", "bv+ba"]
                 if video_quality.lower() != "default":
                     res_value = video_quality.replace("p", "")
                     cmd += ["-S", f"res:{res_value}"]
+                if video_format.lower() != "default":
+                    cmd += ["--merge-output-format", video_format.lower()]
 
         if custom_arg:
             cmd += [custom_arg]
@@ -106,33 +121,35 @@ class Downloader:
                     stderr=subprocess.STDOUT,
                     text=True,
                     env=env,
-                    startupinfo=si
+                    startupinfo=si,
+                    bufsize=1
                 )
+
+                percent_re = re.compile(r'(\d+(?:\.\d+)?)%')
 
                 while True:
                     line = self.process.stdout.readline()
                     if not line:
                         break
-                    if self.output_callback:
-                        self.output_callback(line.strip())
-                    if self.progress_callback and "[" in line and "%" in line:
-                        percent = line.strip().split("%")[0].split()[-1]
+                    s = line.strip()
+                    self.output_signal.emit(s)
+                    m = percent_re.search(s)
+                    if m:
                         try:
-                            self.progress_callback(float(percent))
+                            self.progress_signal.emit(float(m.group(1)))
                         except:
                             pass
 
                 self.process.wait()
                 if self.process.returncode == 0:
-                    self.popup.show_success("Download completed successfully!")
+                    self.finished_signal.emit(True, "Download completed successfully!")
                 else:
-                    self.popup.show_error("Download failed. Check output for for details.")
-            except Exception as e:
-                self.popup.show_error("Download failed. Check output for for details.")
+                    self.finished_signal.emit(False, "Download failed. Check output for details.")
+            except Exception:
+                self.finished_signal.emit(False, "Download failed. Check output for details.")
             finally:
                 self.process = None
-                if self.progress_callback:
-                    self.progress_callback(0)
+                self.progress_signal.emit(0.0)
                 if on_finished:
                     on_finished()
 
@@ -140,8 +157,10 @@ class Downloader:
 
     def stop_download(self):
         if self.process:
-            self.process.terminate()
+            try:
+                self.process.terminate()
+            except Exception:
+                pass
             self.process = None
             self.popup.show_info("Download stopped by user.")
-            if self.progress_callback:
-                self.progress_callback(0)
+            self.progress_signal.emit(0.0)

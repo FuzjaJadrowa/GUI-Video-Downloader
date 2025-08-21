@@ -86,7 +86,7 @@ class VideoDownloaderGUI(QWidget):
         self.video_format_label = QLabel("Video format:")
         self.video_format_combo = QComboBox()
         self.video_format_combo.setMinimumWidth(100)
-        self.video_format_combo.addItems(["Default", "3gp", "flv", "mp4", "webm"])
+        self.video_format_combo.addItems(["Default", "mp4", "mkv", "mov", "avi", "flv", "webm"])
         video_layout.addWidget(self.video_quality_label)
         video_layout.addWidget(self.video_quality_combo)
         video_layout.addWidget(self.video_format_label)
@@ -101,7 +101,7 @@ class VideoDownloaderGUI(QWidget):
         self.audio_format_label = QLabel("Audio format:")
         self.audio_format_combo = QComboBox()
         self.audio_format_combo.setMinimumWidth(100)
-        self.audio_format_combo.addItems(["Default", "mp3", "m4a", "aac", "wav", "ogg"])
+        self.audio_format_combo.addItems(["Default", "mp3", "m4a", "aac", "opus", "wav", "ogg"])
         audio_layout.addWidget(self.audio_quality_label)
         audio_layout.addWidget(self.audio_quality_combo)
         audio_layout.addWidget(self.audio_format_label)
@@ -150,7 +150,6 @@ class VideoDownloaderGUI(QWidget):
         console_layout = QVBoxLayout(console_widget)
         self.console_output = QTextEdit()
         self.console_output.setReadOnly(True)
-        self.console_output.setStyleSheet("QScrollBar:vertical {background: #121212;} QScrollBar::handle:vertical {background: green;}")
         console_layout.addWidget(self.console_output)
         console_widget.setLayout(console_layout)
         self.stack.addWidget(console_widget)
@@ -207,11 +206,11 @@ class VideoDownloaderGUI(QWidget):
             if audio_quality.lower() != "default":
                 cmd += ["--audio-quality", audio_quality.replace("kbps", "K")]
         else:
-            if video_format.lower() != "default":
-                cmd += ["-f", video_format.lower()]
             if video_quality.lower() != "default":
                 res_value = video_quality.replace("p", "")
                 cmd += ["-S", f"res:{res_value}"]
+            if video_format.lower() != "default":
+                cmd += ["--merge-output-format", video_format.lower()]
         if custom_arg:
             cmd += [custom_arg]
         if url:
